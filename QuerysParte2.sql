@@ -6,17 +6,16 @@
 SELECT 
     v.vendedor AS "Vendedor",
     c.nombre_cl AS "Cliente",
-    SUM(f.total_factura) AS "Facturado",
-    SUM(co.valor_cobrado) AS "Cobrado",
+    COALESCE(SUM(f.total_factura), 0) AS "Facturado",
+    COALESCE(SUM(cb.valor_cobrado), 0) AS "Cobrado",
     CASE 
-        WHEN SUM(f.total_factura) - SUM(co.valor_cobrado) > 0 
-        THEN TO_CHAR(SUM(f.total_factura) - SUM(co.valor_cobrado))
-        ELSE 'Deuda Saldada'
+        WHEN COALESCE(SUM(f.total_factura), 0) - COALESCE(SUM(cb.valor_cobrado), 0) = 0 THEN 'Deuda Saldada'
+        ELSE TO_CHAR(COALESCE(SUM(f.total_factura), 0) - COALESCE(SUM(cb.valor_cobrado), 0))
     END AS "Deuda Pendiente"
-FROM facturas f
-JOIN vendedores v ON (f.fk_vendedores = v.id_vendedor)
+FROM vendedores v
+JOIN  facturas f ON (v.id_vendedor = f.fk_vendedores)
 JOIN clientes c ON (f.fk_clientes = c.id_cliente)
-LEFT JOIN cobranzas co ON (f.id_factura = co.fk_facturas)
+LEFT JOIN cobranzas cb ON (f.id_factura = cb.fk_facturas)
 GROUP BY v.vendedor, c.nombre_cl;
 
 -- Consulta 2
