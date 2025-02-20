@@ -1,8 +1,6 @@
 -- Parte I
 
 -- Consulta 1
-
--- id_factura, fecha_factura, vr_antes_iva por vendedor pablo marmol, clientes ciudad medellin
 -- Tablas: Factura, cliente y vendedor
 
 SELECT F.id_factura, F.fecha_factura, F.vr_antes_iva
@@ -99,6 +97,11 @@ SELECT COUNT(*) FROM COBRANZAS COB;
 SELECT * FROM SUCURSALES;
 SELECT COUNT(*) FROM CLIENTES;
 
+SELECT * FROM SERVICIOS WHERE FK_CLIENTES = 1;
+SELECT * FROM FACTURAS WHERE FK_CLIENTES = 2;
+SELECT * FROM COBRANZAS WHERE FK_CLIENTES = 2;
+
+
 SELECT TO_DATE('06/01/2024') - TO_DATE('05/01/2024') DATES FROM DUAL;
 
 -- Consulta 5
@@ -115,3 +118,20 @@ JOIN CLIENTES CLI ON (F.FK_CLIENTES = CLI.ID_CLIENTE)
 WHERE 
     CLI.PAIS_CL = 'PER�' AND
     (CLI.SEGMENTO_CL = 'HOMBRE' OR CLI.SEGMENTO_CL = 'MUJER');
+
+-- Consulta 6
+-- Consultar el nombre del cliente, fecha de la factura, total factura, fecha del cobro y monto del cobro
+-- para los clientes cuyo país es ‘España’, que el canal de venta haya sido Punto de Venta y que el
+-- monto cobrado fue igual al monto facturado.
+-- Tablas: Clientes, Facturas, Cobranzas y Canales. 
+
+SELECT CLI.NOMBRE_CL, F.FECHA_FACTURA, F.ID_FACTURA, F.VR_ANTES_IVA, COB.FECHA_COBRO, COB.VALOR_COBRADO SUMA--F.TOTAL_FACTURA, F.ID_FACTURA, COB.FECHA_COBRO, COB.VALOR_COBRADO
+FROM CLIENTES CLI
+JOIN FACTURAS F ON (CLI.ID_CLIENTE = F.FK_CLIENTES)
+JOIN CANALES CN ON (F.FK_CANALES = CN.ID_CANAL)
+JOIN COBRANZAS COB ON (F.ID_FACTURA = COB.FK_FACTURAS)
+-- GROUP BY CLI.NOMBRE_CL, F.FECHA_FACTURA, F.ID_FACTURA, F.VR_ANTES_IVA
+-- HAVING F.VR_ANTES_IVA = SUM(COB.VALOR_COBRADO)
+WHERE COB.VALOR_COBRADO = F.VR_ANTES_IVA
+ORDER BY CLI.NOMBRE_CL, F.ID_FACTURA;
+
