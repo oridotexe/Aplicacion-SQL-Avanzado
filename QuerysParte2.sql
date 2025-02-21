@@ -72,7 +72,7 @@ ORDER BY cantidad_facturas ASC;
 
 -- 5 Crear tabla hitorico_servicio
 
-  CREATE TABLE historico_servicios (
+CREATE TABLE historico_servicios (
     año NUMBER(4) NOT NULL,
     trimestre NUMBER(1) NOT NULL,
     cantidad_servicios NUMBER NOT NULL,
