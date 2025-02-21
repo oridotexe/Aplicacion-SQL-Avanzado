@@ -69,3 +69,23 @@ AND s.fecha_inicio_serv BETWEEN TO_DATE('2018-10-01', 'YYYY-MM-DD')
 GROUP BY c.canal_venta
 ORDER BY cantidad_facturas ASC;
 
+
+-- 5 Crear tabla hitorico_servicio
+
+  CREATE TABLE historico_servicios (
+    año NUMBER(4) NOT NULL,
+    trimestre NUMBER(1) NOT NULL,
+    cantidad_servicios NUMBER NOT NULL,
+    monto_total_servicio NUMBER(10, 2) NOT NULL,
+    cantidad_facturas NUMBER NOT NULL,
+    monto_total_facturado NUMBER(10, 2) NOT NULL,
+    monto_total_cobrado NUMBER(10, 2) NOT NULL,
+    monto_total_por_cobrar NUMBER(10, 2) NOT NULL,
+    porcentaje_cobrado NUMBER(5, 2) NOT NULL
+);
+
+-- 6 Constraint
+ALTER TABLE historico_servicios
+ADD CONSTRAINT pk_historico_servicios PRIMARY KEY (año, trimestre);
+
+-- 7 
