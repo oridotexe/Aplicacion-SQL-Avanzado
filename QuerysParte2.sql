@@ -6,17 +6,16 @@
 SELECT 
     v.vendedor AS "Vendedor",
     c.nombre_cl AS "Cliente",
-    SUM(f.total_factura) AS "Facturado",
-    SUM(co.valor_cobrado) AS "Cobrado",
+    COALESCE(SUM(f.total_factura), 0) AS "Facturado",
+    COALESCE(SUM(cb.valor_cobrado), 0) AS "Cobrado",
     CASE 
-        WHEN SUM(f.total_factura) - SUM(co.valor_cobrado) > 0 
-        THEN TO_CHAR(SUM(f.total_factura) - SUM(co.valor_cobrado))
-        ELSE 'Deuda Saldada'
+        WHEN COALESCE(SUM(f.total_factura), 0) - COALESCE(SUM(cb.valor_cobrado), 0) = 0 THEN 'Deuda Saldada'
+        ELSE TO_CHAR(COALESCE(SUM(f.total_factura), 0) - COALESCE(SUM(cb.valor_cobrado), 0))
     END AS "Deuda Pendiente"
-FROM facturas f
-JOIN vendedores v ON (f.fk_vendedores = v.id_vendedor)
+FROM vendedores v
+JOIN  facturas f ON (v.id_vendedor = f.fk_vendedores)
 JOIN clientes c ON (f.fk_clientes = c.id_cliente)
-LEFT JOIN cobranzas co ON (f.id_factura = co.fk_facturas)
+LEFT JOIN cobranzas cb ON (f.id_factura = cb.fk_facturas)
 GROUP BY v.vendedor, c.nombre_cl;
 
 -- Consulta 2
@@ -70,3 +69,23 @@ AND s.fecha_inicio_serv BETWEEN TO_DATE('2018-10-01', 'YYYY-MM-DD')
 GROUP BY c.canal_venta
 ORDER BY cantidad_facturas ASC;
 
+
+-- 5 Crear tabla hitorico_servicio
+
+  CREATE TABLE historico_servicios (
+    año NUMBER(4) NOT NULL,
+    trimestre NUMBER(1) NOT NULL,
+    cantidad_servicios NUMBER NOT NULL,
+    monto_total_servicio NUMBER(10, 2) NOT NULL,
+    cantidad_facturas NUMBER NOT NULL,
+    monto_total_facturado NUMBER(10, 2) NOT NULL,
+    monto_total_cobrado NUMBER(10, 2) NOT NULL,
+    monto_total_por_cobrar NUMBER(10, 2) NOT NULL,
+    porcentaje_cobrado NUMBER(5, 2) NOT NULL
+);
+
+-- 6 Constraint
+ALTER TABLE historico_servicios
+ADD CONSTRAINT pk_historico_servicios PRIMARY KEY (año, trimestre);
+
+-- 7 
