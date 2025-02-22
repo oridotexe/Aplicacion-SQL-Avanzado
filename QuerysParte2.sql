@@ -71,7 +71,7 @@ ORDER BY cantidad_facturas ASC;
 
 
 -- 5 Crear tabla hitorico_servicio
-
+-- drop table historico_servicios cascade constraints;
 CREATE TABLE historico_servicios (
     año NUMBER(4) NOT NULL,
     trimestre NUMBER(1) NOT NULL,
