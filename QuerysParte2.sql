@@ -32,8 +32,8 @@ HAVING COUNT(id_factura) > (
     GROUP BY EXTRACT(YEAR FROM fecha_factura)
 );
 
--- Consulta 3
--- Tablas: Facturas, Clientes, Canales, Servicios,Cobranzas
+-- Consulta 10
+-- Tablas: Facturas, Clientes, Canales, Servicios, Cobranzas
 
 SELECT 
     c.canal_venta,
@@ -51,7 +51,7 @@ AND EXTRACT(MONTH FROM s.fecha_inicio_serv) BETWEEN 4 AND 6
 GROUP BY c.canal_venta
 ORDER BY cantidad_servicios ASC;
 
--- Consulta 4
+-- Consulta 11
 -- Tablas: Facturas, Clientes, Canales, Servicios
 -- En los datos no hay clientes de argentina entonces para probarlo tiene que modificar un cliente colocandolo en argentina
 
@@ -70,8 +70,8 @@ GROUP BY c.canal_venta
 ORDER BY cantidad_facturas ASC;
 
 
--- 5 Crear tabla hitorico_servicio
--- drop table historico_servicios cascade constraints;
+-- 12 Crear tabla hitorico_servicio
+
 CREATE TABLE historico_servicios (
     año NUMBER(4) NOT NULL,
     trimestre NUMBER(1) NOT NULL,
@@ -84,7 +84,6 @@ CREATE TABLE historico_servicios (
     porcentaje_cobrado NUMBER(5, 2) NOT NULL
 );
 
---revisar!!
 INSERT INTO historico_servicios (
     año, trimestre, cantidad_servicios, monto_total_servicio, cantidad_facturas, 
     monto_total_facturado, monto_total_cobrado, monto_total_por_cobrar, porcentaje_cobrado
@@ -108,12 +107,12 @@ LEFT JOIN facturas f ON s.fk_clientes = f.fk_clientes
 LEFT JOIN cobranzas c ON f.id_factura = c.fk_facturas
 GROUP BY EXTRACT(YEAR FROM s.fecha_inicio_serv), CEIL(EXTRACT(MONTH FROM s.fecha_inicio_serv) / 3);
 
--- 6 Constraint
+-- 13 Constraint
 ALTER TABLE historico_servicios
 ADD CONSTRAINT pk_historico_servicios PRIMARY KEY (año, trimestre);
 
--- 7 View 
---DROP VIEW COSTOS_SERVICIOS;
+-- 14  Crear vista
+--DROP VIEW COSTOS_SERVICIOS;F
 
 CREATE VIEW COSTOS_SERVICIOS AS
     SELECT 
@@ -132,22 +131,24 @@ CREATE VIEW COSTOS_SERVICIOS AS
         CLI.NOMBRE_CL
 FROM SERVICIOS SERV
 JOIN SUCURSALES SUC ON SERV.FK_SUCURSALES = SUC.ID_SUCURSAL
-JOIN CLIENTES CLI ON SERV.FK_CLIENTES = CLI.ID_CLIENTE,
+JOIN CLIENTES CLI ON SERV.FK_CLIENTES = CLI.ID_CLIENTE
 WITH READ ONLY;
 
 --SELECT * FROM COSTOS_SERVICIOS; 
 
--- 8 
+-- 15
+-- Tablas: historicos_servicios / vistas: costos_servicios
 
-
--- 9
+-- 16 
+-- costos promedio
 SELECT 
     SUCURSAL,
     AVG(COSTO_HORA) AS COSTO_PROMEDIO_HORA
 FROM COSTOS_SERVICIOS
 GROUP BY SUCURSAL;
 
--- 10
+
+--17
 SELECT COUNT(*) AS TOTAL_SUCURSALES
 FROM SUCURSALES SUC
 WHERE SUC.ID_SUCURSAL IN (
@@ -156,26 +157,57 @@ WHERE SUC.ID_SUCURSAL IN (
     JOIN COBRANZAS COB ON SERV.FK_CLIENTES = COB.FK_CLIENTES 
 );
 
--- 12
+-- 18
+SELECT 
+    V.VENDEDOR AS "VENDEDOR",
+    SUM(F.TOTAL_FACTURA) AS "MONTO_TOTAL_FACTURADO",
+    SUM(F.TOTAL_FACTURA) * 0.10 AS "COMISION"
+FROM VENDEDORES V
+JOIN FACTURAS F ON V.ID_VENDEDOR = F.FK_VENDEDORES
+JOIN CLIENTES CLI ON F.FK_CLIENTES = CLI.ID_CLIENTE
+WHERE CLI.CIUDAD_CL = 'CARACAS'
+GROUP BY V.VENDEDOR
+HAVING SUM(F.TOTAL_FACTURA) > (
+    SELECT AVG(TOTAL_FACTURADO)
+    FROM (
+        SELECT SUM(F.TOTAL_FACTURA) AS TOTAL_FACTURADO
+        FROM FACTURAS F
+        JOIN CLIENTES CLI ON F.FK_CLIENTES = CLI.ID_CLIENTE
+        WHERE CLI.CIUDAD_CL = 'CARACAS'
+        GROUP BY F.FK_VENDEDORES
+    )
+)
+ORDER BY "MONTO_TOTAL_FACTURADO" DESC;
+
+-- 19
 SELECT COUNT(*) AS VENDEDOR_SIN_FACTURA
 FROM VENDEDORES VER
 WHERE VER.ID_VENDEDOR NOT IN(
     SELECT DISTINCT FK_VENDEDORES FROM FACTURAS
 );
 
--- 13 
---tablas facturas, canales, clientes, cobranzas
-SELECT ca.canal_venta,c.pais_cl,
-    SUM(f.iva) AS monto_total_iva
-FROM facturas f
-JOIN canales ca ON (f.fk_canales = ca.id_canal)
-JOIN clientes c ON (f.fk_clientes = c.id_cliente)
-JOIN (SELECT 
-         fk_facturas, 
-         SUM(valor_cobrado) AS total_cobrado
-     FROM cobranzas
-     GROUP BY fk_facturas) cob ON f.id_factura = cob.fk_facturas
-WHERE 
-    EXTRACT(YEAR FROM f.fecha_factura) = 2019
-    AND cob.total_cobrado < f.iva
-GROUP BY ca.canal_venta, c.pais_cl;
+-- 20
+SELECT 
+    CN.CANAL_VENTA AS "CANAL_VENTA", 
+    CLI.PAIS_CL AS "PAIS", 
+    SUM(F.IVA) AS "MONTO_TOTAL_IVA"
+FROM (
+    SELECT 
+        F.ID_FACTURA, 
+        F.FK_CANALES, 
+        F.FK_CLIENTES, 
+        F.IVA, 
+        COALESCE(SUM(COB.VALOR_COBRADO), 0) AS TOTAL_COBRADO
+    FROM FACTURAS F
+    LEFT JOIN COBRANZAS COB ON F.ID_FACTURA = COB.FK_FACTURAS
+    WHERE EXTRACT(YEAR FROM F.FECHA_FACTURA) = 2019
+    GROUP BY F.ID_FACTURA, F.FK_CANALES, F.FK_CLIENTES, F.IVA
+    HAVING COALESCE(SUM(COB.VALOR_COBRADO), 0) < F.IVA
+) F
+JOIN CLIENTES CLI ON F.FK_CLIENTES = CLI.ID_CLIENTE
+JOIN CANALES CN ON F.FK_CANALES = CN.ID_CANAL
+GROUP BY CN.CANAL_VENTA, CLI.PAIS_CL;
+
+-- 21
+
+-- 22
