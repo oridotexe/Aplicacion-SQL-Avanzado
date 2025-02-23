@@ -162,3 +162,20 @@ FROM VENDEDORES VER
 WHERE VER.ID_VENDEDOR NOT IN(
     SELECT DISTINCT FK_VENDEDORES FROM FACTURAS
 );
+
+-- 13 
+--tablas facturas, canales, clientes, cobranzas
+SELECT ca.canal_venta,c.pais_cl,
+    SUM(f.iva) AS monto_total_iva
+FROM facturas f
+JOIN canales ca ON (f.fk_canales = ca.id_canal)
+JOIN clientes c ON (f.fk_clientes = c.id_cliente)
+JOIN (SELECT 
+         fk_facturas, 
+         SUM(valor_cobrado) AS total_cobrado
+     FROM cobranzas
+     GROUP BY fk_facturas) cob ON f.id_factura = cob.fk_facturas
+WHERE 
+    EXTRACT(YEAR FROM f.fecha_factura) = 2019
+    AND cob.total_cobrado < f.iva
+GROUP BY ca.canal_venta, c.pais_cl;
