@@ -107,12 +107,70 @@ LEFT JOIN facturas f ON s.fk_clientes = f.fk_clientes
 LEFT JOIN cobranzas c ON f.id_factura = c.fk_facturas
 GROUP BY EXTRACT(YEAR FROM s.fecha_inicio_serv), CEIL(EXTRACT(MONTH FROM s.fecha_inicio_serv) / 3);
 
+INSERT INTO historico_servicios (
+    año, trimestre, cantidad_servicios, monto_total_servicio, cantidad_facturas, 
+    monto_total_facturado, monto_total_cobrado, monto_total_por_cobrar, porcentaje_cobrado
+)
+SELECT 
+    COALESCE(s.año, f.año, cob.año) AS año, 
+    COALESCE(s.trimestre, f.trimestre, cob.trimestre) AS trimestre, 
+    COALESCE(s.cantidad_servicios, 0) AS cantidad_servicios, 
+    COALESCE(s.monto_total_servicio, 0) AS monto_total_servicio, 
+    COALESCE(f.cantidad_facturas, 0) AS cantidad_facturas, 
+    COALESCE(f.monto_total_facturado, 0) AS monto_total_facturado, 
+    COALESCE(cob.monto_total_cobrado, 0) AS monto_total_cobrado, 
+    COALESCE(f.monto_total_facturado, 0) - COALESCE(cob.monto_total_cobrado, 0) AS monto_total_por_cobrar,
+    CASE 
+        WHEN COALESCE(f.monto_total_facturado, 0) > 0 
+        THEN (COALESCE(cob.monto_total_cobrado, 0) / COALESCE(f.monto_total_facturado, 1)) * 100
+        ELSE 0 
+    END AS porcentaje_cobrado
+FROM 
+    (SELECT 
+        EXTRACT(YEAR FROM s.fecha_inicio_serv) AS año,
+        CEIL(EXTRACT(MONTH FROM s.fecha_inicio_serv) / 3) AS trimestre,
+        COUNT(DISTINCT s.id_servicio) AS cantidad_servicios,
+        SUM(s.costo_servicio) AS monto_total_servicio
+     FROM SERVICIOS S
+     GROUP BY EXTRACT(YEAR FROM s.fecha_inicio_serv), CEIL(EXTRACT(MONTH FROM s.fecha_inicio_serv) / 3)
+    ) s
+
+FULL OUTER JOIN
+
+    (SELECT 
+        EXTRACT(YEAR FROM f.fecha_factura) AS año,
+        CEIL(EXTRACT(MONTH FROM f.fecha_factura) / 3) AS trimestre,
+        COUNT(DISTINCT f.id_factura) AS cantidad_facturas,
+        SUM(f.total_factura) AS monto_total_facturado
+     FROM FACTURAS F
+     GROUP BY EXTRACT(YEAR FROM f.fecha_factura), CEIL(EXTRACT(MONTH FROM f.fecha_factura) / 3)
+    ) f
+
+ON s.año = f.año AND s.trimestre = f.trimestre
+
+FULL OUTER JOIN
+
+    (SELECT 
+        EXTRACT(YEAR FROM C.FECHA_COBRO) AS año,
+        CEIL(EXTRACT(MONTH FROM C.FECHA_COBRO) / 3) AS trimestre,
+        COALESCE(SUM(c.valor_cobrado), 0) AS monto_total_cobrado
+     FROM  COBRANZAS C 
+     GROUP BY EXTRACT(YEAR FROM C.FECHA_COBRO), CEIL(EXTRACT(MONTH FROM C.FECHA_COBRO) / 3)
+    ) cob
+
+ON COALESCE(s.año, f.año) = cob.año AND COALESCE(s.trimestre, f.trimestre) = cob.trimestre;
+
+
+SELECT * FROM HISTORICO_SERVICIOS;
+DROP TABLE HISTORICO_SERVICIOS;
+
+
 -- 13 Constraint
 ALTER TABLE historico_servicios
 ADD CONSTRAINT pk_historico_servicios PRIMARY KEY (año, trimestre);
 
 -- 14  Crear vista
---DROP VIEW COSTOS_SERVICIOS;F
+--DROP VIEW COSTOS_SERVICIOS;
 
 CREATE VIEW COSTOS_SERVICIOS AS
     SELECT 
@@ -134,7 +192,8 @@ JOIN SUCURSALES SUC ON SERV.FK_SUCURSALES = SUC.ID_SUCURSAL
 JOIN CLIENTES CLI ON SERV.FK_CLIENTES = CLI.ID_CLIENTE
 WITH READ ONLY;
 
---SELECT * FROM COSTOS_SERVICIOS; 
+
+SELECT * FROM COSTOS_SERVICIOS; 
 
 -- 15
 -- Tablas: historicos_servicios / vistas: costos_servicios
