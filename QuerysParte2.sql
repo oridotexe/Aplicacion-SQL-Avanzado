@@ -4,23 +4,22 @@
 -- Tablas: Vendedores, Clientes, Facturas, Cobranzas
 
 SELECT 
-    v.vendedor AS "Vendedor",
-    c.nombre_cl AS "Cliente",
-    COALESCE(SUM(f.total_factura), 0) AS "Facturado",
-    COALESCE(SUM(cb.valor_cobrado), 0) AS "Cobrado",
+    V.VENDEDOR AS "VENDEDOR",
+    CLI.NOMBRE_CL AS "CLIENTE",
+    COALESCE(SUM(F.TOTAL_FACTURA), 0) AS "FACTURADO",
+    COALESCE(SUM(COB.VALOR_COBRADO), 0) AS "COBRADO",
     CASE 
-        WHEN COALESCE(SUM(f.total_factura), 0) - COALESCE(SUM(cb.valor_cobrado), 0) = 0 THEN 'Deuda Saldada'
-        ELSE TO_CHAR(COALESCE(SUM(f.total_factura), 0) - COALESCE(SUM(cb.valor_cobrado), 0))
-    END AS "Deuda Pendiente"
-FROM vendedores v
-JOIN  facturas f ON (v.id_vendedor = f.fk_vendedores)
-JOIN clientes c ON (f.fk_clientes = c.id_cliente)
-LEFT JOIN cobranzas cb ON (f.id_factura = cb.fk_facturas)
-GROUP BY v.vendedor, c.nombre_cl;
+        WHEN COALESCE(SUM(F.TOTAL_FACTURA), 0) - COALESCE(SUM(COB.VALOR_COBRADO), 0) = 0 THEN 'DEUDA SALDADA'
+        ELSE TO_CHAR(COALESCE(SUM(F.TOTAL_FACTURA), 0) - COALESCE(SUM(COB.VALOR_COBRADO), 0))
+    END AS "DEUDA PENDIENTE"
+FROM VENDEDORES V
+JOIN  FACTURAS F ON (V.ID_VENDEDOR = F.FK_VENDEDORES)
+JOIN CLIENTES CLI ON (F.FK_CLIENTES = CLI.ID_CLIENTE)
+LEFT JOIN COBRANZAS COB ON (F.ID_FACTURA = COB.FK_FACTURAS)
+GROUP BY V.VENDEDOR, CLI.NOMBRE_CL;
 
 -- Consulta 2
 -- Tablas: Facturas
-
 SELECT 
     EXTRACT(YEAR FROM fecha_factura) AS "Año",
     COUNT(id_factura) AS "Cantidad de Facturas"
@@ -197,6 +196,20 @@ SELECT * FROM COSTOS_SERVICIOS;
 
 -- 15
 -- Tablas: historicos_servicios / vistas: costos_servicios
+WITH COSTO_HORA_HISTORICO AS (
+    SELECT AÑO, SUM(MONTO_TOTAL_SERVICIO)/(SUM(CANTIDAD_SERVICIOS) * 90 * 8) AS COSTO_HORA
+    FROM HISTORICO_SERVICIOS GROUP BY AÑO
+)
+SELECT 
+    CO.año, 
+    CO.sucursal,
+    H.COSTO_HORA AS "COSTO/HORA HISTORICO",
+    AVG(CO.COSTO_HORA) AS "COSTO/HORA VISTA",
+    ABS((H.COSTO_HORA - AVG(CO.COSTO_HORA))) AS "DIFERENCIA"
+FROM COSTOS_SERVICIOS CO
+JOIN COSTO_HORA_HISTORICO H ON CO.año = H.año
+GROUP BY CO.año, CO.sucursal, H.COSTO_HORA
+ORDER BY CO.año, CO.sucursal;
 
 -- 16 
 -- costos promedio
