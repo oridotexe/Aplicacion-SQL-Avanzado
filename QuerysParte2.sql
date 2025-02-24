@@ -65,8 +65,7 @@ JOIN servicios s ON s.fk_clientes = cl.id_cliente
 WHERE cl.pais_cl = 'ARGENTINA'
 AND s.fecha_inicio_serv BETWEEN TO_DATE('2018-10-01', 'YYYY-MM-DD') 
                            AND TO_DATE('2019-03-31', 'YYYY-MM-DD')
-GROUP BY c.canal_venta
-ORDER BY cantidad_facturas ASC;
+GROUP BY c.canal_venta;
 
 
 -- 12 Crear tabla hitorico_servicio
