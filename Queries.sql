@@ -3,7 +3,7 @@
 -------------------------------------------
 
 -- Consulta 1
-SELECT F.id_factura, F.fecha_factura, F.vr_antes_iva
+SELECT F.ID_FACTURA, F.FECHA_FACTURA, F.VR_ANTES_IVA
 FROM FACTURAS F 
 JOIN VENDEDORES V ON (V.ID_VENDEDOR = F.FK_VENDEDORES)
 JOIN CLIENTES CLI ON (CLI.ID_CLIENTE = F.FK_CLIENTES)
