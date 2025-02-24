@@ -88,29 +88,6 @@ INSERT INTO historico_servicios (
     monto_total_facturado, monto_total_cobrado, monto_total_por_cobrar, porcentaje_cobrado
 )
 SELECT 
-    EXTRACT(YEAR FROM s.fecha_inicio_serv) AS año,
-    CEIL(EXTRACT(MONTH FROM s.fecha_inicio_serv) / 3) AS trimestre,
-    COUNT(DISTINCT s.id_servicio) AS cantidad_servicios,
-    SUM(DISTINCT s.costo_servicio) AS monto_total_servicio,
-    COUNT(DISTINCT f.id_factura) AS cantidad_facturas,
-    SUM(DISTINCT f.total_factura) AS monto_total_facturado,
-    COALESCE(SUM(DISTINCT c.valor_cobrado), 0) AS monto_total_cobrado,
-    SUM(DISTINCT f.total_factura) - COALESCE(SUM(DISTINCT c.valor_cobrado), 0) AS monto_total_por_cobrar,
-    CASE 
-        WHEN SUM(DISTINCT f.total_factura) > 0 
-        THEN (COALESCE(SUM(DISTINCT c.valor_cobrado), 0) / SUM(DISTINCT f.total_factura)) * 100
-        ELSE 0 
-    END AS porcentaje_cobrado
-FROM servicios s
-LEFT JOIN facturas f ON s.fk_clientes = f.fk_clientes
-LEFT JOIN cobranzas c ON f.id_factura = c.fk_facturas
-GROUP BY EXTRACT(YEAR FROM s.fecha_inicio_serv), CEIL(EXTRACT(MONTH FROM s.fecha_inicio_serv) / 3);
-
-INSERT INTO historico_servicios (
-    año, trimestre, cantidad_servicios, monto_total_servicio, cantidad_facturas, 
-    monto_total_facturado, monto_total_cobrado, monto_total_por_cobrar, porcentaje_cobrado
-)
-SELECT 
     COALESCE(s.año, f.año, cob.año) AS año, 
     COALESCE(s.trimestre, f.trimestre, cob.trimestre) AS trimestre, 
     COALESCE(s.cantidad_servicios, 0) AS cantidad_servicios, 
