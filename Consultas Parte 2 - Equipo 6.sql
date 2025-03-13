@@ -140,6 +140,8 @@ ALTER TABLE historico_servicios
 ADD CONSTRAINT pk_historico_servicios PRIMARY KEY (año, trimestre);
 
 -- Vista 7 (14 en pdf)
+DROP VIEW COSTOS_SERVICIOS;
+
 CREATE VIEW COSTOS_SERVICIOS AS
     SELECT 
         EXTRACT (YEAR FROM SERV.fecha_inicio_serv) AS año,
